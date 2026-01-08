@@ -138,6 +138,22 @@ function filterProps(
     return filteredProps;
 }
 
+/**
+ * 快速合并 className，避免不必要的 compose 调用
+ */
+function mergeClassName(compose: AbstractCompose, base: any, override: any): any {
+    // 如果没有 override，直接返回 base
+    if (override === undefined || override === null || override === '') {
+        return base;
+    }
+    // 如果没有 base，直接返回 override
+    if (base === undefined || base === null || base === '') {
+        return override;
+    }
+    // 都存在时才调用 compose
+    return compose(base, override);
+}
+
 type Attributes = Record<string, any> | ((props: any) => Record<string, any>);
 
 /**
@@ -169,49 +185,77 @@ export const createTwc = <TCompose extends AbstractCompose = typeof clsx>(
             attrs?: Attributes,
             shouldForwardProp = defaultShouldForwardProp
         ) => {
+            // 缓存已创建的组件，避免重复创建
+            const componentCache = new Map<string, React.ForwardRefExoticComponent<any>>();
+
             const template = (stringsOrFn: TemplateStringsArray | Function, ...values: any[]) => {
                 // 判断是否为函数形式的 className
                 const isClassFn = typeof stringsOrFn === 'function';
-                // 解析模板字符串
-                const tplClassName = !isClassFn && String.raw({ raw: stringsOrFn }, ...values);
+
+                // 生成缓存 key
+                const cacheKey = isClassFn
+                    ? stringsOrFn.toString()
+                    : String.raw({ raw: stringsOrFn }, ...values);
+
+                // 检查缓存
+                if (componentCache.has(cacheKey)) {
+                    return componentCache.get(cacheKey)!;
+                }
+
+                // 解析模板字符串（仅在非函数时）
+                const tplClassName = !isClassFn ? cacheKey : undefined;
+
+                // 优化：提前检查 attrs 类型，避免每次渲染都检查
+                const hasAttrs = attrs !== undefined;
+                const isAttrsFunction = typeof attrs === 'function';
+                const staticAttrs = !isAttrsFunction && hasAttrs ? attrs : undefined;
 
                 // 使用 forwardRef 支持 ref 转发
                 const ForwardedComponent = React.forwardRef((p: any, ref) => {
                     const { className: classNameProp, ...rest } = p;
 
                     // 处理 attrs (静态或动态)
-                    const resolvedAttrs =
-                        typeof attrs === 'function' ? attrs(p) : attrs ? attrs : {};
+                    let finalProps: Record<string, any>;
 
-                    // 过滤 props，移除 transient props
-                    const filteredProps = filterProps(
-                        { ...resolvedAttrs, ...rest },
-                        shouldForwardProp
-                    );
+                    if (!hasAttrs) {
+                        // 没有 attrs，直接过滤 rest
+                        finalProps = filterProps(rest, shouldForwardProp);
+                    } else if (isAttrsFunction) {
+                        // 动态 attrs
+                        const resolvedAttrs = (attrs as Function)(p);
+                        finalProps = filterProps({ ...resolvedAttrs, ...rest }, shouldForwardProp);
+                    } else {
+                        // 静态 attrs
+                        finalProps = filterProps({ ...staticAttrs, ...rest }, shouldForwardProp);
+                    }
 
                     // 计算最终的 className
-                    const baseClassName = isClassFn ? stringsOrFn(p) : tplClassName;
+                    const baseClassName = isClassFn ? (stringsOrFn as Function)(p) : tplClassName;
 
-                    // 支持 render props 形式的 className (用于某些 RN 组件)
+                    // 优化：避免不必要的函数包装
                     const finalClassName =
                         typeof baseClassName === 'function'
                             ? (renderProps: any) =>
-                                  compose(
+                                  mergeClassName(
+                                      compose,
                                       baseClassName(renderProps),
                                       typeof classNameProp === 'function'
                                           ? classNameProp(renderProps)
                                           : classNameProp
                                   )
-                            : compose(baseClassName, classNameProp);
+                            : mergeClassName(compose, baseClassName, classNameProp);
 
                     const Comp = Component as React.ComponentType<any>;
-                    return <Comp ref={ref} className={finalClassName} {...filteredProps} />;
+                    return <Comp ref={ref} className={finalClassName} {...finalProps} />;
                 });
 
                 // 设置 displayName 便于调试
                 ForwardedComponent.displayName = `twc(${
                     Component.displayName || Component.name || 'Component'
                 })`;
+
+                // 缓存组件
+                componentCache.set(cacheKey, ForwardedComponent);
 
                 return ForwardedComponent;
             };

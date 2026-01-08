@@ -1,6 +1,6 @@
 {
     "name": "react-native-twc",
-    "version": "1.0.3",
+    "version": "1.1.0",
     "description": "Create reusable React Native + NativeWind components with Tailwind CSS syntax.",
     "type": "module",
     "main": "./dist/index.js",
@@ -17,7 +17,7 @@
     "scripts": {
         "test": "bun test",
         "build": "rm -rf dist && bun run build:js && bun run build:dts",
-        "build:js": "bun build src/index.tsx --outdir dist --format esm --external react --external react-native --external clsx --external tailwind-merge",
+        "build:js": "NODE_ENV=production bun build src/index.tsx --outdir dist --format esm --external react --external react-native --external clsx --external tailwind-merge",
         "build:dts": "tsc -p tsconfig.build.json",
         "check-types": "tsc --noEmit",
         "prepublishOnly": "bun run build"

@@ -12,6 +12,7 @@
     "experimentalDecorators": false,
     "importHelpers": true,
     "jsx": "react-jsx",
+    "jsxImportSource": "react",
     "lib": ["DOM", "ESNext", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
