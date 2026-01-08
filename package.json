@@ -1,6 +1,6 @@
 {
     "name": "react-native-twc",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Create reusable React Native + NativeWind components with Tailwind CSS syntax.",
     "type": "module",
     "exports": {
@@ -33,7 +33,7 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/ldystudio/twc.git"
+        "url": "git+https://github.com/ldystudio/react-native-twc.git"
     },
     "homepage": "https://react-twc.vercel.app",
     "devDependencies": {
