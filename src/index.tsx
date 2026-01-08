@@ -138,22 +138,6 @@ function filterProps(
     return filteredProps;
 }
 
-/**
- * 快速合并 className，避免不必要的 compose 调用
- */
-function mergeClassName(compose: AbstractCompose, base: any, override: any): any {
-    // 如果没有 override，直接返回 base
-    if (override === undefined || override === null || override === '') {
-        return base;
-    }
-    // 如果没有 base，直接返回 override
-    if (base === undefined || base === null || base === '') {
-        return override;
-    }
-    // 都存在时才调用 compose
-    return compose(base, override);
-}
-
 type Attributes = Record<string, any> | ((props: any) => Record<string, any>);
 
 /**
@@ -236,14 +220,13 @@ export const createTwc = <TCompose extends AbstractCompose = typeof clsx>(
                     const finalClassName =
                         typeof baseClassName === 'function'
                             ? (renderProps: any) =>
-                                  mergeClassName(
-                                      compose,
+                                  compose(
                                       baseClassName(renderProps),
                                       typeof classNameProp === 'function'
                                           ? classNameProp(renderProps)
                                           : classNameProp
                                   )
-                            : mergeClassName(compose, baseClassName, classNameProp);
+                            : compose(baseClassName, classNameProp);
 
                     const Comp = Component as React.ComponentType<any>;
                     return <Comp ref={ref} className={finalClassName} {...finalProps} />;
