@@ -2,7 +2,7 @@
 
 > Create reusable React Native + NativeWind components with Tailwind CSS syntax
 
-This project is a **React Native adaptation** of [TWC (react-twc)](https://github.com/gregberge/twc) by [Greg Bergé](https://github.com/gregberge). The original TWC library provides an elegant way to create styled React components with Tailwind CSS. This fork adapts the library specifically for React Native with NativeWind support.
+A lightweight library for creating styled React Native components using Tailwind CSS class syntax with NativeWind support. Inspired by [TWC (react-twc)](https://github.com/gregberge/twc).
 
 ## Features
 
@@ -258,10 +258,10 @@ import { twx } from "react-native-twc";
 const Title = twx(Text)`font-bold`;
 ```
 
-## Differences from Original TWC
+## Differences from TWC (Web)
 
-| Feature | Original TWC | react-native-twc |
-|---------|--------------|------------------|
+| Feature | TWC (Web) | react-native-twc |
+|---------|-----------|------------------|
 | HTML tags (`twc.div`) | ✅ Supported | ❌ Not supported |
 | `asChild` prop | ✅ Supported | ❌ Not supported |
 | React Native components | ❌ Not optimized | ✅ Fully supported |
@@ -269,15 +269,11 @@ const Title = twx(Text)`font-bold`;
 
 ## Acknowledgements
 
-- [TWC (react-twc)](https://github.com/gregberge/twc) by [Greg Bergé](https://github.com/gregberge) - The original inspiration and foundation for this project
-- [NativeWind](https://www.nativewind.dev/) - Tailwind CSS for React Native
-- [styled-components](https://styled-components.com) - Where the template literal API originated
-- [tailwind-merge](https://github.com/dcastil/tailwind-merge) - Intelligent Tailwind class merging
+- [TWC (react-twc)](https://github.com/gregberge/twc) by [Greg Bergé](https://github.com/gregberge) — The original inspiration for this project
+- [NativeWind](https://www.nativewind.dev/) — Tailwind CSS for React Native
+- [styled-components](https://styled-components.com) — Where the template literal API originated
+- [tailwind-merge](https://github.com/dcastil/tailwind-merge) — Intelligent Tailwind class merging
 
 ## License
 
-MIT License © 2023-Present [Greg Bergé](https://github.com/gregberge)
-
----
-
-**Note:** This is a community fork adapted for React Native. For the original React (web) version, please visit [react-twc](https://github.com/gregberge/twc).
+MIT
