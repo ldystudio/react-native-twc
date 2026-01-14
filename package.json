@@ -36,25 +36,19 @@
     },
     "homepage": "https://react-twc.vercel.app",
     "devDependencies": {
-        "@eslint/eslintrc": "^3.3.1",
-        "@eslint/js": "^9.30.0",
+        "@biomejs/biome": "^2.3.11",
         "@happy-dom/global-registrator": "^18.0.1",
         "@testing-library/react": "^16.3.0",
         "@types/bun": "^1.2.5",
         "@types/react": "^19.1.8",
-        "@typescript-eslint/eslint-plugin": "^8.35.0",
-        "@typescript-eslint/parser": "^8.35.0",
         "class-variance-authority": "^0.7.1",
-        "eslint": "^9.30.0",
         "happy-dom": "^18.0.1",
         "prettier": "^3.6.2",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
         "rolldown": "^1.0.0-beta.59",
         "tailwind-merge": "^3.3.1",
-        "typescript": "^5.8.3",
-        "typescript-eslint": "^8.35.0",
-        "ultracite": "7.0.10"
+        "typescript": "^5.8.3"
     },
     "dependencies": {
         "clsx": "^2.1.1"
