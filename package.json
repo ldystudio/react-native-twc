@@ -1,0 +1,76 @@
+{
+    "name": "react-native-twc",
+    "version": "1.1.1",
+    "description": "Create reusable React Native + NativeWind components with Tailwind CSS syntax.",
+    "type": "module",
+    "main": "./dist/index.js",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "test": "bun test",
+        "build": "rm -rf dist && rolldown -c && tsc -p tsconfig.build.json",
+        "check-types": "tsc --noEmit",
+        "prepublishOnly": "bun test && bun run build"
+    },
+    "keywords": [
+        "react-native",
+        "nativewind",
+        "tailwind",
+        "css",
+        "components",
+        "styled",
+        "styled-components",
+        "expo"
+    ],
+    "author": "ldystudio",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ldystudio/react-native-twc.git"
+    },
+    "homepage": "https://react-twc.vercel.app",
+    "devDependencies": {
+        "@eslint/eslintrc": "^3.3.1",
+        "@eslint/js": "^9.30.0",
+        "@happy-dom/global-registrator": "^18.0.1",
+        "@testing-library/react": "^16.3.0",
+        "@types/bun": "^1.2.5",
+        "@types/react": "^19.1.8",
+        "@typescript-eslint/eslint-plugin": "^8.35.0",
+        "@typescript-eslint/parser": "^8.35.0",
+        "class-variance-authority": "^0.7.1",
+        "eslint": "^9.30.0",
+        "happy-dom": "^18.0.1",
+        "prettier": "^3.6.2",
+        "react": "^19.1.0",
+        "react-dom": "^19.1.0",
+        "rolldown": "^1.0.0-beta.59",
+        "tailwind-merge": "^3.3.1",
+        "typescript": "^5.8.3",
+        "typescript-eslint": "^8.35.0",
+        "ultracite": "7.0.10"
+    },
+    "dependencies": {
+        "clsx": "^2.1.1"
+    },
+    "peerDependencies": {
+        "react": ">=18.0.0",
+        "react-native": ">=0.72.0",
+        "nativewind": ">=4.0.0",
+        "tailwind-merge": ">=3.3.1"
+    },
+    "peerDependenciesMeta": {
+        "react-native": {
+            "optional": true
+        },
+        "nativewind": {
+            "optional": true
+        }
+    }
+}
