@@ -55,8 +55,39 @@ type Template<
 ) => React.ForwardRefExoticComponent<ResultProps<TComponent, TProps, TExtraProps, TCompose>>;
 
 /**
+ * Children 渲染器类型
+ * 用于包裹 children 并返回 ReactNode
+ * TChildren 默认为 React.ReactNode，但可以指定为更具体的类型如 string
+ */
+type ChildrenRenderer<TChildren = React.ReactNode> = (children: TChildren) => React.ReactNode;
+
+/**
+ * 带 withChildren 的模板类型
+ * 用于 attrs 返回后仍可调用 withChildren
+ */
+type TemplateWithChildren<
+    TComponent extends RNComponentType,
+    TCompose extends AbstractCompose,
+    TExtraProps,
+    TParentProps = undefined,
+> = Template<TComponent, TCompose, TExtraProps, TParentProps> & {
+    /**
+     * 预定义 children 的渲染方式
+     * 可通过泛型指定 children 类型，默认为 React.ReactNode
+     * @example
+     * // 默认接受任意 ReactNode
+     * const Card = twc(View).withChildren((children) => <Wrapper>{children}</Wrapper>)`...`
+     * // 指定只接受 string
+     * const Button = twc(Pressable).withChildren<string>((text) => <Text>{text}</Text>)`...`
+     */
+    withChildren: <TChildren = React.ReactNode>(
+        renderer: ChildrenRenderer<TChildren>
+    ) => Template<TComponent, TCompose, TExtraProps, TParentProps>;
+};
+
+/**
  * 第一级模板类型
- * 包含 attrs 和 transientProps 方法
+ * 包含 attrs、transientProps 和 withChildren 方法
  */
 type FirstLevelTemplate<
     TComponent extends RNComponentType,
@@ -74,7 +105,7 @@ type FirstLevelTemplate<
             | ((
                   props: ResultProps<TComponent, TProps, TExtraProps, TCompose>
               ) => Record<string, any>)
-    ) => Template<TComponent, TCompose, TExtraProps, TProps>;
+    ) => TemplateWithChildren<TComponent, TCompose, TExtraProps, TProps>;
 } & {
     /**
      * 防止特定 props 被转发到底层组件
@@ -83,6 +114,19 @@ type FirstLevelTemplate<
      */
     transientProps: (
         fn: string[] | ((prop: string) => boolean)
+    ) => FirstLevelTemplate<TComponent, TCompose, TExtraProps>;
+} & {
+    /**
+     * 预定义 children 的渲染方式
+     * 可通过泛型指定 children 类型，默认为 React.ReactNode
+     * @example
+     * // 默认接受任意 ReactNode
+     * const Card = twc(View).withChildren((children) => <Wrapper>{children}</Wrapper>)`...`
+     * // 指定只接受 string
+     * const Button = twc(Pressable).withChildren<string>((text) => <Text>{text}</Text>)`...`
+     */
+    withChildren: <TChildren = React.ReactNode>(
+        renderer: ChildrenRenderer<TChildren>
     ) => FirstLevelTemplate<TComponent, TCompose, TExtraProps>;
 };
 
@@ -138,6 +182,46 @@ function filterProps(
     return filteredProps;
 }
 
+/**
+ * 展平 style（处理数组和嵌套数组）
+ */
+function flattenStyle(style: any): Record<string, any> {
+    if (style == null) return {};
+    if (Array.isArray(style)) {
+        return style.reduce((acc, s) => ({ ...acc, ...flattenStyle(s) }), {});
+    }
+    return style;
+}
+
+/**
+ * 合并 style 属性
+ * 将 baseStyle 和 overrideStyle 合并为单个对象
+ * @param baseStyle - 基础 style (来自 attrs)
+ * @param overrideStyle - 覆盖 style (来自 props)
+ * @returns 合并后的 style 对象
+ */
+function mergeStyles(baseStyle: any, overrideStyle: any): any {
+    if (baseStyle == null) return overrideStyle;
+    if (overrideStyle == null) return baseStyle;
+    // 展平并合并，后者覆盖前者的同名属性
+    return { ...flattenStyle(baseStyle), ...flattenStyle(overrideStyle) };
+}
+
+/**
+ * 合并 attrs 和 props，对 style 进行特殊处理
+ */
+function mergePropsWithAttrs(
+    attrs: Record<string, any>,
+    props: Record<string, any>
+): Record<string, any> {
+    const merged = { ...attrs, ...props };
+    // 如果两者都有 style，则合并而不是覆盖
+    if (attrs.style != null && props.style != null) {
+        merged.style = mergeStyles(attrs.style, props.style);
+    }
+    return merged;
+}
+
 type Attributes = Record<string, any> | ((props: any) => Record<string, any>);
 
 /**
@@ -167,7 +251,8 @@ export const createTwc = <TCompose extends AbstractCompose = typeof clsx>(
     const wrap = <T extends RNComponentType>(Component: T) => {
         const createTemplate = (
             attrs?: Attributes,
-            shouldForwardProp = defaultShouldForwardProp
+            shouldForwardProp = defaultShouldForwardProp,
+            childrenRenderer?: ChildrenRenderer
         ) => {
             // 缓存已创建的组件，避免重复创建
             const componentCache = new Map<string, React.ForwardRefExoticComponent<any>>();
@@ -196,7 +281,7 @@ export const createTwc = <TCompose extends AbstractCompose = typeof clsx>(
 
                 // 使用 forwardRef 支持 ref 转发
                 const ForwardedComponent = React.forwardRef((p: any, ref) => {
-                    const { className: classNameProp, ...rest } = p;
+                    const { className: classNameProp, children, ...rest } = p;
 
                     // 处理 attrs (静态或动态)
                     let finalProps: Record<string, any>;
@@ -207,10 +292,16 @@ export const createTwc = <TCompose extends AbstractCompose = typeof clsx>(
                     } else if (isAttrsFunction) {
                         // 动态 attrs
                         const resolvedAttrs = (attrs as Function)(p);
-                        finalProps = filterProps({ ...resolvedAttrs, ...rest }, shouldForwardProp);
+                        finalProps = filterProps(
+                            mergePropsWithAttrs(resolvedAttrs, rest),
+                            shouldForwardProp
+                        );
                     } else {
                         // 静态 attrs
-                        finalProps = filterProps({ ...staticAttrs, ...rest }, shouldForwardProp);
+                        finalProps = filterProps(
+                            mergePropsWithAttrs(staticAttrs!, rest),
+                            shouldForwardProp
+                        );
                     }
 
                     // 计算最终的 className
@@ -228,8 +319,17 @@ export const createTwc = <TCompose extends AbstractCompose = typeof clsx>(
                                   )
                             : compose(baseClassName, classNameProp);
 
+                    // 处理 children：如果有渲染器则使用渲染器包裹
+                    const finalChildren = childrenRenderer
+                        ? childrenRenderer(children)
+                        : children;
+
                     const Comp = Component as React.ComponentType<any>;
-                    return <Comp ref={ref} className={finalClassName} {...finalProps} />;
+                    return (
+                        <Comp ref={ref} className={finalClassName} {...finalProps}>
+                            {finalChildren}
+                        </Comp>
+                    );
                 });
 
                 // 设置 displayName 便于调试
@@ -245,17 +345,22 @@ export const createTwc = <TCompose extends AbstractCompose = typeof clsx>(
 
             // transientProps 方法: 自定义哪些 props 不应转发
             template.transientProps = (fnOrArray: string[] | ((prop: string) => boolean)) => {
-                const shouldForwardProp =
+                const newShouldForwardProp =
                     typeof fnOrArray === 'function'
                         ? (prop: string) => !fnOrArray(prop)
                         : (prop: string) => !fnOrArray.includes(prop);
-                return createTemplate(attrs, shouldForwardProp);
+                return createTemplate(attrs, newShouldForwardProp, childrenRenderer);
+            };
+
+            // withChildren 方法: 预定义 children 的渲染方式
+            template.withChildren = (renderer: ChildrenRenderer) => {
+                return createTemplate(attrs, shouldForwardProp, renderer);
             };
 
             // attrs 方法: 添加默认 props (仅在未设置 attrs 时可用)
             if (attrs === undefined) {
-                template.attrs = (attrs: Attributes) => {
-                    return createTemplate(attrs, shouldForwardProp);
+                template.attrs = (newAttrs: Attributes) => {
+                    return createTemplate(newAttrs, shouldForwardProp, childrenRenderer);
                 };
             }
 

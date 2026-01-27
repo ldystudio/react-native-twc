@@ -448,6 +448,70 @@ describe("twc for React Native", () => {
       const input = screen.getByTestId("input");
       expect(input.getAttribute("placeholder")).toBe("Custom");
     });
+
+    test("style from attrs and props are merged, not replaced", () => {
+      const Card = twc(View).attrs({
+        style: { backgroundColor: "white", padding: 10 },
+      })`rounded`;
+
+      render(
+        <Card
+          testID="card"
+          style={{ margin: 20, backgroundColor: "blue" }}
+        >
+          Content
+        </Card>,
+      );
+      const card = screen.getByTestId("card");
+      // style 应该是数组格式 [attrsStyle, propsStyle]
+      const style = card.style;
+      // React Native 会将数组展平，后面的覆盖前面的
+      // 在测试环境中，我们验证 style 对象包含合并后的值
+      expect(style.margin).toBe("20px");
+      expect(style.backgroundColor).toBe("blue"); // 被覆盖
+      expect(style.padding).toBe("10px"); // 保留
+    });
+
+    test("style from attrs works when props has no style", () => {
+      const Card = twc(View).attrs({
+        style: { backgroundColor: "white", padding: 10 },
+      })`rounded`;
+
+      render(<Card testID="card">Content</Card>);
+      const card = screen.getByTestId("card");
+      expect(card.style.backgroundColor).toBe("white");
+      expect(card.style.padding).toBe("10px");
+    });
+
+    test("style from props works when attrs has no style", () => {
+      const Card = twc(View).attrs({
+        "aria-label": "card",
+      })`rounded`;
+
+      render(
+        <Card testID="card" style={{ margin: 20 }}>
+          Content
+        </Card>,
+      );
+      const card = screen.getByTestId("card");
+      expect(card.style.margin).toBe("20px");
+    });
+
+    test("dynamic attrs style is also merged with props style", () => {
+      type Props = TwcComponentProps<typeof View> & { $padded?: boolean };
+      const Card = twc(View).attrs<Props>((props) => ({
+        style: { padding: props.$padded ? 20 : 0 },
+      }))`rounded`;
+
+      render(
+        <Card testID="card" $padded style={{ margin: 10 }}>
+          Content
+        </Card>,
+      );
+      const card = screen.getByTestId("card");
+      expect(card.style.padding).toBe("20px");
+      expect(card.style.margin).toBe("10px");
+    });
   });
 
   describe("Transient Props", () => {
@@ -998,6 +1062,149 @@ describe("twc for React Native", () => {
       const successInput = screen.getByTestId("input-success");
       expect(successInput.className).toContain("border-green-500");
       expect(successInput.className).toContain("bg-green-50");
+    });
+  });
+
+  describe("withChildren Feature", () => {
+    test("renders string children using renderer", () => {
+      const Button = twc(Pressable).withChildren((children) => (
+        <Text className="text-white font-bold">{children}</Text>
+      ))`bg-blue-500 py-2 px-4 rounded`;
+
+      render(<Button testID="button">Click me</Button>);
+      const button = screen.getByTestId("button");
+      expect(button.className).toBe("bg-blue-500 py-2 px-4 rounded");
+      expect(button.textContent).toBe("Click me");
+      // 内部的 Text 组件应该有正确的 className
+      const innerText = button.querySelector("span");
+      expect(innerText?.className).toBe("text-white font-bold");
+    });
+
+    test("wraps ReactNode children with renderer", () => {
+      const Card = twc(View).withChildren((children) => (
+        <View className="wrapper" testID="wrapper">
+          {children}
+        </View>
+      ))`bg-white p-4 rounded`;
+
+      render(
+        <Card testID="card">
+          <Text testID="custom">Custom Content</Text>
+        </Card>,
+      );
+      // ReactNode children 应该被渲染器包裹
+      expect(screen.getByTestId("wrapper")).toBeDefined();
+      expect(screen.getByTestId("custom")).toBeDefined();
+      expect(screen.getByTestId("custom").textContent).toBe("Custom Content");
+    });
+
+    test("withChildren works with attrs", () => {
+      const FloatButton = twc(Pressable)
+        .attrs({ "aria-label": "Float action button" })
+        .withChildren((children) => (
+          <Text className="text-white text-lg">{children}</Text>
+        ))`absolute bottom-4 right-4 bg-purple-500 rounded-full p-4`;
+
+      render(<FloatButton testID="fab">Add</FloatButton>);
+      const fab = screen.getByTestId("fab");
+      expect(fab.getAttribute("aria-label")).toBe("Float action button");
+      expect(fab.textContent).toBe("Add");
+      const innerText = fab.querySelector("span");
+      expect(innerText?.className).toBe("text-white text-lg");
+    });
+
+    test("withChildren works with transientProps", () => {
+      type Props = TwcComponentProps<typeof Pressable> & {
+        $variant: "primary" | "secondary";
+      };
+      const Button = twc(Pressable)
+        .transientProps(["$variant"])
+        .withChildren((children) => (
+          <Text className="font-medium">{children}</Text>
+        ))<Props>((props) => ({
+        "bg-blue-500": props.$variant === "primary",
+        "bg-gray-200": props.$variant === "secondary",
+      }));
+
+      render(
+        <Button testID="button" $variant="primary">
+          Primary
+        </Button>,
+      );
+      const button = screen.getByTestId("button");
+      expect(button.getAttribute("$variant")).toBeNull();
+      expect(button.className).toContain("bg-blue-500");
+      expect(button.textContent).toBe("Primary");
+    });
+
+    test("withChildren handles empty string children", () => {
+      const Button = twc(Pressable).withChildren((children) => (
+        <Text className="text-white">{children || "Default"}</Text>
+      ))`bg-blue-500`;
+
+      render(<Button testID="button">{""}</Button>);
+      const button = screen.getByTestId("button");
+      expect(button.textContent).toBe("Default");
+    });
+
+    test("withChildren handles undefined children", () => {
+      const Button = twc(Pressable).withChildren((children) => (
+        <Text className="text-white">{children ?? "Fallback"}</Text>
+      ))`bg-blue-500`;
+
+      render(<Button testID="button" />);
+      const button = screen.getByTestId("button");
+      // undefined children 也会经过渲染器，渲染器内部处理 fallback
+      expect(button.textContent).toBe("Fallback");
+    });
+
+    test("withChildren wraps complex ReactNode", () => {
+      const Container = twc(View).withChildren((children) => (
+        <View className="inner-wrapper" testID="inner">
+          <Text className="prefix">Prefix: </Text>
+          {children}
+        </View>
+      ))`bg-gray-100`;
+
+      render(
+        <Container testID="container">
+          <View testID="child1">Child 1</View>
+          <View testID="child2">Child 2</View>
+        </Container>,
+      );
+
+      expect(screen.getByTestId("inner")).toBeDefined();
+      expect(screen.getByTestId("child1")).toBeDefined();
+      expect(screen.getByTestId("child2")).toBeDefined();
+    });
+
+    test("withChildren with generic type for string-only children", () => {
+      // 使用泛型指定 children 只接受 string 类型
+      const FloatButton = twc(Pressable).withChildren<string>((text) => (
+        <Text className="text-white text-lg font-bold">{text.toUpperCase()}</Text>
+      ))`bg-purple-500 rounded-full p-4`;
+
+      render(<FloatButton testID="fab">submit</FloatButton>);
+      const fab = screen.getByTestId("fab");
+      // text.toUpperCase() 应该生效
+      expect(fab.textContent).toBe("SUBMIT");
+    });
+
+    test("withChildren generic type with optional string", () => {
+      // children 类型为 string | undefined
+      const Button = twc(Pressable).withChildren<string | undefined>((text) => (
+        <Text className="text-white">{text ?? "默认文本"}</Text>
+      ))`bg-blue-500`;
+
+      // 不传 children
+      render(<Button testID="btn1" />);
+      expect(screen.getByTestId("btn1").textContent).toBe("默认文本");
+
+      cleanup();
+
+      // 传 string
+      render(<Button testID="btn2">自定义</Button>);
+      expect(screen.getByTestId("btn2").textContent).toBe("自定义");
     });
   });
 });

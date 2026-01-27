@@ -12,6 +12,8 @@ A lightweight library for creating styled React Native components using Tailwind
 - 🦄 **Works with any React Native component**
 - 🚀 **First-class `tailwind-merge` and `cva` support**
 - 📱 **Built for React Native + NativeWind**
+- 🎁 **`withChildren`** — Pre-define children rendering with type safety
+- 🔀 **Smart style merging** — `attrs` styles merge with props styles
 
 ## Installation
 
@@ -209,6 +211,73 @@ const Box = twc(View).transientProps(["size"])<Props>((props) => ({
 <Box size="lg" />
 ```
 
+### Using `withChildren`
+
+Pre-define how children should be rendered. Useful for creating button components with consistent text styling:
+
+```tsx
+import { Pressable, Text } from "react-native";
+import { twx } from "react-native-twc";
+
+// Default: accepts any ReactNode
+const Card = twx(View).withChildren((children) => (
+  <View className="p-4">{children}</View>
+))`bg-white rounded-lg`;
+
+// With generic type: accepts only string
+const Button = twx(Pressable).withChildren<string>((text) => (
+  <Text className="text-white font-bold text-center">{text}</Text>
+))`bg-blue-500 py-3 px-6 rounded-lg`;
+
+// Usage
+<Button>Submit</Button>  // text is typed as string
+<Card><CustomComponent /></Card>  // children is ReactNode
+```
+
+Combine with `attrs` for powerful component composition:
+
+```tsx
+const FloatButton = twx(Pressable)
+  .attrs({
+    activeOpacity: 0.8,
+    style: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 } },
+  })
+  .withChildren<string>((text) => (
+    <Text className="text-white text-lg">{text}</Text>
+  ))`absolute bottom-4 right-4 bg-purple-500 rounded-full p-4`;
+
+<FloatButton>Add</FloatButton>
+```
+
+### Smart Style Merging with `attrs`
+
+When using `attrs` with a `style` prop, styles are intelligently merged (not replaced) when you pass additional styles:
+
+```tsx
+const Card = twc(View).attrs({
+  style: { backgroundColor: "white", padding: 16, borderRadius: 8 },
+})`shadow-lg`;
+
+// Styles are merged: padding and borderRadius are preserved
+<Card style={{ backgroundColor: "blue", margin: 10 }}>
+  Content
+</Card>
+// Result: { backgroundColor: "blue", padding: 16, borderRadius: 8, margin: 10 }
+```
+
+This also works with dynamic attrs:
+
+```tsx
+type Props = TwcComponentProps<typeof View> & { $padded?: boolean };
+
+const Box = twc(View).attrs<Props>((props) => ({
+  style: { padding: props.$padded ? 20 : 0 },
+}))`bg-gray-100`;
+
+<Box $padded style={{ margin: 10 }}>Content</Box>
+// Result: { padding: 20, margin: 10 }
+```
+
 ## API Reference
 
 ### `twc(Component)`
@@ -258,12 +327,47 @@ import { twx } from "react-native-twc";
 const Title = twx(Text)`font-bold`;
 ```
 
+### `.withChildren<T>(renderer)`
+
+Pre-define children rendering with optional type constraint.
+
+```tsx
+// Accept any ReactNode (default)
+const Card = twc(View).withChildren((children) => (
+  <Wrapper>{children}</Wrapper>
+))`bg-white`;
+
+// Accept only string
+const Button = twc(Pressable).withChildren<string>((text) => (
+  <Text className="text-white">{text}</Text>
+))`bg-blue-500`;
+
+// Accept string or undefined
+const Label = twc(View).withChildren<string | undefined>((text) => (
+  <Text>{text ?? "Default"}</Text>
+))`p-2`;
+```
+
+### `.attrs(attributes)` - Style Merging
+
+When `attrs` includes a `style` prop, it will be merged with any `style` passed to the component (not replaced):
+
+```tsx
+const Box = twc(View).attrs({
+  style: { padding: 10 },  // Base style
+})`bg-white`;
+
+<Box style={{ margin: 5 }} />  // Merged: { padding: 10, margin: 5 }
+```
+
 ## Differences from TWC (Web)
 
 | Feature | TWC (Web) | react-native-twc |
 |---------|-----------|------------------|
 | HTML tags (`twc.div`) | ✅ Supported | ❌ Not supported |
 | `asChild` prop | ✅ Supported | ❌ Not supported |
+| `withChildren` | ❌ Not supported | ✅ Supported |
+| Smart style merging | ❌ Not supported | ✅ Supported |
 | React Native components | ❌ Not optimized | ✅ Fully supported |
 | NativeWind | ❌ Not designed for | ✅ First-class support |
 
