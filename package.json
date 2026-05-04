@@ -1,7 +1,7 @@
 {
   "name": "react-native-twc",
-  "version": "1.2.0",
-  "description": "Create reusable React Native + NativeWind components with Tailwind CSS syntax.",
+  "version": "1.2.1",
+  "description": "Create reusable React Native components with Tailwind-style className syntax.",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -20,7 +20,6 @@
   },
   "keywords": [
     "react-native",
-    "nativewind",
     "tailwind",
     "css",
     "components",
@@ -56,14 +55,10 @@
   "peerDependencies": {
     "react": ">=18.0.0",
     "react-native": ">=0.72.0",
-    "nativewind": ">=4.0.0",
     "tailwind-merge": ">=3.3.1"
   },
   "peerDependenciesMeta": {
     "react-native": {
-      "optional": true
-    },
-    "nativewind": {
       "optional": true
     }
   }

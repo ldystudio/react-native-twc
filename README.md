@@ -1,8 +1,8 @@
 # react-native-twc
 
-> Create reusable React Native + NativeWind components with Tailwind CSS syntax
+> Create reusable React Native components with Tailwind-style className syntax
 
-A lightweight library for creating styled React Native components using Tailwind CSS class syntax with NativeWind support. Inspired by [TWC (react-twc)](https://github.com/gregberge/twc).
+A lightweight library for creating styled React Native components using Tailwind-style className syntax. Inspired by [TWC (react-twc)](https://github.com/gregberge/twc).
 
 ## Features
 
@@ -11,7 +11,7 @@ A lightweight library for creating styled React Native components using Tailwind
 - 🎨 **Dynamic styling** based on props
 - 🦄 **Works with any React Native component**
 - 🚀 **First-class `tailwind-merge` and `cva` support**
-- 📱 **Built for React Native + NativeWind**
+- 📱 **Built for React Native className runtimes**
 - 🎁 **`withChildren`** — Pre-define children rendering with type safety
 - 🔀 **Smart style merging** — `attrs` styles merge with props styles
 
@@ -30,10 +30,10 @@ bun add react-native-twc
 
 ### Peer Dependencies
 
-Make sure you have the following peer dependencies installed:
+Make sure you have the following peer dependencies installed. Install your className runtime (for example NativeWind or Uniwind) separately if your app needs one:
 
 ```bash
-npm install react react-native nativewind tailwind-merge
+npm install react react-native tailwind-merge
 ```
 
 ## Usage
@@ -369,12 +369,11 @@ const Box = twc(View).attrs({
 | `withChildren` | ❌ Not supported | ✅ Supported |
 | Smart style merging | ❌ Not supported | ✅ Supported |
 | React Native components | ❌ Not optimized | ✅ Fully supported |
-| NativeWind | ❌ Not designed for | ✅ First-class support |
+| React Native className runtime | ❌ Not designed for | ✅ Runtime agnostic |
 
 ## Acknowledgements
 
 - [TWC (react-twc)](https://github.com/gregberge/twc) by [Greg Bergé](https://github.com/gregberge) — The original inspiration for this project
-- [NativeWind](https://www.nativewind.dev/) — Tailwind CSS for React Native
 - [styled-components](https://styled-components.com) — Where the template literal API originated
 - [tailwind-merge](https://github.com/dcastil/tailwind-merge) — Intelligent Tailwind class merging
 
